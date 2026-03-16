@@ -1,0 +1,15 @@
+# Output and cache
+docs_output/
+.dockit_cache/
+
+# Binary
+/dockit
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.claude/

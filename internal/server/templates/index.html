@@ -1,0 +1,21 @@
+{{define "content"}}
+<div class="welcome">
+  <h1 class="welcome-title">Dockit</h1>
+  <p class="welcome-desc">Select a document from the sidebar to get started.</p>
+  {{if .Results}}
+  <div class="repo-grid">
+    {{range .Results}}
+    <div class="repo-card">
+      <div class="repo-card-name">{{.Name}}</div>
+      <div class="repo-card-meta">
+        <span class="repo-card-status">
+          {{if .Error}}<span class="dot dot-err"></span> Error{{else}}<span class="dot dot-ok"></span> OK{{end}}
+        </span>
+        <span>{{.FilesCount}} files</span>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}

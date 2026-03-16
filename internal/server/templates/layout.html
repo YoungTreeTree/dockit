@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dockit</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fb;
+  --bg-sidebar: #fbfcfd;
+  --bg-hover: #f0f2f5;
+  --bg-active: #e8f0fe;
+  --bg-header: #1a1a2e;
+  --bg-code: #f4f5f7;
+  --border: #e3e6ea;
+  --border-light: #eef0f3;
+  --text-primary: #1d2129;
+  --text-secondary: #4e5969;
+  --text-tertiary: #86909c;
+  --text-link: #165dff;
+  --text-link-hover: #0e42d2;
+  --accent: #165dff;
+  --accent-hover: #0e42d2;
+  --accent-light: #e8f0fe;
+  --success: #00b42a;
+  --danger: #f53f3f;
+  --warning: #ff7d00;
+  --radius: 6px;
+  --sidebar-width: 280px;
+  --header-height: 52px;
+  --transition: 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--text-link); text-decoration: none; }
+a:hover { color: var(--text-link-hover); }
+
+/* ========= Header ========= */
+.header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: var(--bg-header);
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-logo svg { opacity: 0.9; }
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+.sidebar-toggle:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sync-status {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+.sync-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.25); }
+.sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sync-btn svg {
+  width: 14px;
+  height: 14px;
+  transition: var(--transition);
+}
+.sync-btn.syncing svg {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ========= Main Layout ========= */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ========= Sidebar ========= */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--transition), min-width var(--transition), border var(--transition);
+  flex-shrink: 0;
+}
+.sidebar.sidebar-hidden {
+  width: 0;
+  min-width: 0;
+  border-right-color: transparent;
+}
+
+/* search */
+.sidebar-search {
+  padding: 12px 14px 8px;
+  flex-shrink: 0;
+}
+.sidebar-search input {
+  width: 100%;
+  padding: 7px 10px 7px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2386909c' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") no-repeat 10px center;
+  outline: none;
+  transition: var(--transition);
+}
+.sidebar-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(22,93,255,0.1);
+}
+.sidebar-search input::placeholder { color: var(--text-tertiary); }
+
+/* tree */
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 16px;
+}
+.sidebar-tree::-webkit-scrollbar { width: 4px; }
+.sidebar-tree::-webkit-scrollbar-track { background: transparent; }
+.sidebar-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* tree nodes */
+.tree-group { }
+.tree-group-inner {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.tree-group-inner.collapsed { grid-template-rows: 0fr; }
+.tree-inner-wrap { overflow: hidden; }
+
+.tree-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 14px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: var(--transition);
+  border-radius: 0;
+}
+.tree-label:hover { background: var(--bg-hover); }
+.tree-chevron {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.tree-chevron.open { transform: rotate(90deg); }
+.tree-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.tree-repo {
+  padding: 0 0 2px;
+}
+.tree-repo-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 14px 4px 34px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+}
+.tree-repo-label:hover { background: var(--bg-hover); }
+.tree-repo-inner {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.tree-repo-inner.collapsed { grid-template-rows: 0fr; }
+
+.tree-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 4px 52px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: var(--transition);
+  border-radius: 0;
+  text-decoration: none;
+}
+.tree-file:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.tree-file.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 500;
+}
+.tree-file-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.tree-file.active .tree-file-icon { opacity: 0.8; }
+
+.tree-empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* ========= Content ========= */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  background: var(--bg-primary);
+}
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ========= Markdown ========= */
+.md-body {
+  max-width: 860px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+.md-body h1 {
+  font-size: 1.9em;
+  font-weight: 700;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: -0.3px;
+}
+.md-body h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  margin: 32px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+.md-body h3 { font-size: 1.15em; font-weight: 600; margin: 28px 0 10px; }
+.md-body h4, .md-body h5, .md-body h6 { margin: 24px 0 8px; font-weight: 600; }
+.md-body p { margin: 0 0 16px; }
+.md-body code {
+  background: var(--bg-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  color: #c7254e;
+}
+.md-body pre {
+  background: #282c34;
+  color: #abb2bf;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.md-body pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.md-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 8px 16px;
+  margin: 0 0 16px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.md-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.md-body th, .md-body td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+.md-body th { background: var(--bg-secondary); font-weight: 600; }
+.md-body tr:nth-child(2n) { background: var(--bg-secondary); }
+.md-body img { max-width: 100%; height: auto; border-radius: var(--radius); }
+.md-body ul, .md-body ol { padding-left: 1.8em; margin: 0 0 16px; }
+.md-body li { margin: 4px 0; }
+.md-body li > ul, .md-body li > ol { margin: 4px 0 0; }
+.md-body hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.md-body a { color: var(--text-link); }
+.md-body a:hover { text-decoration: underline; }
+.md-body input[type="checkbox"] { margin-right: 6px; }
+
+/* git header */
+.git-header {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.git-header a { color: var(--text-link); font-weight: 500; }
+
+/* ========= Footer ========= */
+.footer {
+  padding: 6px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ========= Welcome ========= */
+.welcome {
+  max-width: 720px;
+}
+.welcome-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.welcome-desc {
+  color: var(--text-tertiary);
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+.repo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.repo-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  transition: var(--transition);
+}
+.repo-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(22,93,255,0.08);
+}
+.repo-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.repo-card-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.repo-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.dot-ok { background: var(--success); }
+.dot-err { background: var(--danger); }
+
+/* ========= Responsive ========= */
+@media (max-width: 768px) {
+  :root { --sidebar-width: 260px; }
+  .content { padding: 20px 16px; }
+  .sidebar.sidebar-hidden { width: 0; min-width: 0; border-right-color: transparent; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="header-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Dockit
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="sync-status" id="sync-status"></span>
+    <button class="sync-btn" id="sync-btn" onclick="triggerSync()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Sync
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-search">
+      <input type="text" id="search-input" placeholder="Search docs..." oninput="filterTree(this.value)">
+    </div>
+    <div class="sidebar-tree" id="sidebar-tree"></div>
+  </nav>
+  <div class="content" id="content">
+    {{if .MarkdownContent}}
+    <div class="md-body">{{.MarkdownContent}}</div>
+    {{else}}
+    {{block "content" .}}{{end}}
+    {{end}}
+  </div>
+</div>
+
+<div class="footer" id="footer">
+  <span id="footer-status">Ready</span>
+  <span>Dockit</span>
+</div>
+
+<script>
+let treeData = null;
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('sidebar-hidden');
+}
+
+/* ====== Tree rendering ====== */
+async function loadTree() {
+  const resp = await fetch('/api/tree');
+  treeData = await resp.json();
+  renderTree(treeData);
+}
+
+function renderTree(tree) {
+  const container = document.getElementById('sidebar-tree');
+  container.innerHTML = '';
+  if (!tree.children || tree.children.length === 0) {
+    container.innerHTML = '<div class="tree-empty">No documents yet</div>';
+    return;
+  }
+  tree.children.forEach(child => container.appendChild(buildGroupNode(child, 0)));
+}
+
+const chevronSVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+const folderSVG = '<svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
+const repoSVG = '<svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
+const fileSVG = '<svg class="tree-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+
+// Build a nested tree structure from flat file paths
+// e.g. ["docs/a.md", "docs/api/b.md", "README.md"] =>
+// { dirs: { docs: { dirs: { api: { dirs: {}, files: ["b.md"] } }, files: ["a.md"] } }, files: ["README.md"] }
+function buildFileTree(files) {
+  const root = { dirs: {}, files: [] };
+  files.forEach(file => {
+    const parts = file.split('/');
+    let node = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const dir = parts[i];
+      if (!node.dirs[dir]) node.dirs[dir] = { dirs: {}, files: [] };
+      node = node.dirs[dir];
+    }
+    node.files.push(parts[parts.length - 1]);
+  });
+  return root;
+}
+
+const subfolderSVG = '<svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
+
+// Render a file tree node into a container element
+function renderFileTree(node, container, repoName, pathPrefix, depth) {
+  // render subdirectories first
+  const dirNames = Object.keys(node.dirs).sort();
+  dirNames.forEach(dirName => {
+    const dirDiv = document.createElement('div');
+    dirDiv.className = 'tree-repo';
+    dirDiv.setAttribute('data-name', dirName.toLowerCase());
+
+    const dirLabel = document.createElement('div');
+    dirLabel.className = 'tree-repo-label';
+    dirLabel.style.paddingLeft = (34 + depth * 16) + 'px';
+
+    const dChevron = document.createElement('span');
+    dChevron.className = 'tree-chevron';
+    dChevron.innerHTML = chevronSVG;
+    dirLabel.appendChild(dChevron);
+
+    const dIcon = document.createElement('span');
+    dIcon.innerHTML = subfolderSVG;
+    dIcon.style.display = 'flex';
+    dIcon.style.marginRight = '6px';
+    dirLabel.appendChild(dIcon);
+
+    const dName = document.createElement('span');
+    dName.textContent = dirName;
+    dirLabel.appendChild(dName);
+    dirDiv.appendChild(dirLabel);
+
+    const dirInner = document.createElement('div');
+    dirInner.className = 'tree-repo-inner collapsed';
+    const dirWrap = document.createElement('div');
+    dirWrap.className = 'tree-inner-wrap';
+
+    const subPath = pathPrefix ? pathPrefix + '/' + dirName : dirName;
+    renderFileTree(node.dirs[dirName], dirWrap, repoName, subPath, depth + 1);
+
+    dirInner.appendChild(dirWrap);
+    dirDiv.appendChild(dirInner);
+
+    dirLabel.onclick = function() {
+      dirInner.classList.toggle('collapsed');
+      dChevron.classList.toggle('open');
+    };
+
+    container.appendChild(dirDiv);
+  });
+
+  // render files
+  node.files.sort().forEach(fileName => {
+    const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
+    const a = document.createElement('a');
+    a.className = 'tree-file';
+    a.href = '/' + repoName + '/' + fullPath;
+    a.style.paddingLeft = (52 + depth * 16) + 'px';
+    a.setAttribute('data-name', fullPath.toLowerCase());
+
+    const fIcon = document.createElement('span');
+    fIcon.innerHTML = fileSVG;
+    fIcon.style.display = 'flex';
+    a.appendChild(fIcon);
+
+    const fName = document.createElement('span');
+    fName.textContent = fileName;
+    fName.style.overflow = 'hidden';
+    fName.style.textOverflow = 'ellipsis';
+    a.appendChild(fName);
+
+    a.title = repoName + '/' + fullPath;
+    a.onclick = function(e) {
+      e.preventDefault();
+      loadFile(repoName, fullPath);
+    };
+    container.appendChild(a);
+  });
+}
+
+function buildGroupNode(node, depth) {
+  const div = document.createElement('div');
+  div.className = 'tree-group';
+  div.setAttribute('data-name', node.name.toLowerCase());
+
+  const hasChildren = (node.children && node.children.length > 0) || (node.repos && node.repos.length > 0);
+
+  // label
+  const label = document.createElement('div');
+  label.className = 'tree-label';
+  label.style.paddingLeft = (14 + depth * 16) + 'px';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'tree-chevron';
+  chevron.innerHTML = hasChildren ? chevronSVG : '';
+  label.appendChild(chevron);
+
+  const icon = document.createElement('span');
+  icon.innerHTML = folderSVG;
+  icon.style.display = 'flex';
+  icon.style.marginRight = '6px';
+  label.appendChild(icon);
+
+  const name = document.createElement('span');
+  name.textContent = node.name;
+  label.appendChild(name);
+  div.appendChild(label);
+
+  // children container (collapsed by default)
+  const inner = document.createElement('div');
+  inner.className = 'tree-group-inner collapsed';
+  const innerWrap = document.createElement('div');
+  innerWrap.className = 'tree-inner-wrap';
+
+  // repos
+  if (node.repos) {
+    node.repos.forEach(repo => {
+      const repoDiv = document.createElement('div');
+      repoDiv.className = 'tree-repo';
+      repoDiv.setAttribute('data-name', repo.name.toLowerCase());
+
+      // repo label
+      const repoLabel = document.createElement('div');
+      repoLabel.className = 'tree-repo-label';
+      repoLabel.style.paddingLeft = (34 + depth * 16) + 'px';
+
+      const rChevron = document.createElement('span');
+      rChevron.className = 'tree-chevron';
+      rChevron.innerHTML = repo.files.length > 0 ? chevronSVG : '';
+      repoLabel.appendChild(rChevron);
+
+      const rIcon = document.createElement('span');
+      rIcon.innerHTML = repoSVG;
+      rIcon.style.display = 'flex';
+      rIcon.style.marginRight = '6px';
+      repoLabel.appendChild(rIcon);
+
+      const rName = document.createElement('span');
+      rName.textContent = repo.name;
+      repoLabel.appendChild(rName);
+      repoDiv.appendChild(repoLabel);
+
+      // build file tree from flat file paths (collapsed by default)
+      const repoInner = document.createElement('div');
+      repoInner.className = 'tree-repo-inner collapsed';
+      const repoWrap = document.createElement('div');
+      repoWrap.className = 'tree-inner-wrap';
+
+      const fileTree = buildFileTree(repo.files);
+      const baseDepth = depth + 1;
+      renderFileTree(fileTree, repoWrap, repo.name, '', baseDepth);
+
+      repoInner.appendChild(repoWrap);
+      repoDiv.appendChild(repoInner);
+
+      // repo toggle
+      repoLabel.onclick = function() {
+        repoInner.classList.toggle('collapsed');
+        rChevron.classList.toggle('open');
+      };
+
+      innerWrap.appendChild(repoDiv);
+    });
+  }
+
+  // sub-groups
+  if (node.children) {
+    node.children.forEach(child => innerWrap.appendChild(buildGroupNode(child, depth + 1)));
+  }
+
+  inner.appendChild(innerWrap);
+  div.appendChild(inner);
+
+  // group toggle
+  label.onclick = function() {
+    inner.classList.toggle('collapsed');
+    chevron.classList.toggle('open');
+  };
+
+  return div;
+}
+
+/* ====== Search / Filter ====== */
+function filterTree(query) {
+  const q = query.toLowerCase().trim();
+  const groups = document.querySelectorAll('.tree-group');
+  groups.forEach(g => {
+    if (!q) {
+      g.style.display = '';
+      g.querySelectorAll('.tree-repo, .tree-file').forEach(el => el.style.display = '');
+      return;
+    }
+    let groupMatch = false;
+    g.querySelectorAll('.tree-file').forEach(f => {
+      const match = f.getAttribute('data-name').includes(q) || f.title.toLowerCase().includes(q);
+      f.style.display = match ? '' : 'none';
+      if (match) groupMatch = true;
+    });
+    g.querySelectorAll('.tree-repo').forEach(r => {
+      const visibleFiles = r.querySelectorAll('.tree-file:not([style*="display: none"])');
+      const repoNameMatch = r.getAttribute('data-name').includes(q);
+      if (repoNameMatch) {
+        r.querySelectorAll('.tree-file').forEach(f => f.style.display = '');
+        r.style.display = '';
+        groupMatch = true;
+      } else {
+        r.style.display = visibleFiles.length > 0 ? '' : 'none';
+      }
+    });
+    g.style.display = groupMatch || g.getAttribute('data-name').includes(q) ? '' : 'none';
+  });
+}
+
+/* ====== File loading (SPA) ====== */
+async function loadFile(repo, file) {
+  const url = '/' + repo + '/' + file;
+  highlightFile(url);
+
+  const resp = await fetch(url, {headers: {'Accept': 'text/html-partial'}});
+  const html = await resp.text();
+  const content = document.getElementById('content');
+  content.innerHTML = html;
+  content.scrollTop = 0;
+  window.history.pushState(null, '', url);
+  document.title = file.split('/').pop() + ' - Dockit';
+}
+
+// Highlight a file in the tree and expand all ancestor nodes
+function highlightFile(url) {
+  document.querySelectorAll('.tree-file').forEach(el => el.classList.remove('active'));
+  const target = document.querySelector('.tree-file[href="' + CSS.escape(url) + '"]');
+  if (!target) return;
+  target.classList.add('active');
+
+  // expand all ancestor collapsed nodes
+  let el = target.parentElement;
+  while (el) {
+    if (el.classList.contains('tree-group-inner') || el.classList.contains('tree-repo-inner')) {
+      if (el.classList.contains('collapsed')) {
+        el.classList.remove('collapsed');
+        // also rotate the chevron
+        const prev = el.previousElementSibling;
+        if (prev) {
+          const chev = prev.querySelector('.tree-chevron');
+          if (chev) chev.classList.add('open');
+        }
+      }
+    }
+    el = el.parentElement;
+  }
+
+  // scroll into view
+  requestAnimationFrame(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+}
+
+/* ====== Sync ====== */
+async function triggerSync() {
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.classList.add('syncing');
+  btn.querySelector('svg + span') || (btn.lastChild.textContent = 'Syncing...');
+  try {
+    await fetch('/api/sync', {method: 'POST'});
+    pollStatus();
+  } catch(e) {
+    btn.disabled = false;
+    btn.classList.remove('syncing');
+  }
+}
+
+async function pollStatus() {
+  const resp = await fetch('/api/status');
+  const status = await resp.json();
+  const btn = document.getElementById('sync-btn');
+  const footer = document.getElementById('footer-status');
+
+  if (status.running) {
+    setTimeout(pollStatus, 1000);
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('syncing');
+    loadTree();
+  }
+
+  if (status.last_sync) {
+    const t = new Date(status.last_sync).toLocaleString();
+    footer.textContent = 'Last sync: ' + t;
+    if (status.error) footer.textContent += ' \u00B7 ' + status.error;
+  }
+}
+
+/* ====== Init ====== */
+loadTree().then(() => {
+  // sync tree with current URL
+  const path = window.location.pathname;
+  if (path !== '/') {
+    highlightFile(path);
+    document.title = path.split('/').pop() + ' - Dockit';
+  }
+});
+fetch('/api/status').then(r => r.json()).then(status => {
+  if (status.last_sync) {
+    const t = new Date(status.last_sync).toLocaleString();
+    document.getElementById('footer-status').textContent = 'Last sync: ' + t;
+    if (status.error) document.getElementById('footer-status').textContent += ' \u00B7 ' + status.error;
+  }
+});
+
+// handle browser back/forward
+window.onpopstate = function() {
+  const path = window.location.pathname;
+  if (path !== '/') {
+    const parts = path.substring(1).split('/');
+    const repo = parts[0];
+    const file = parts.slice(1).join('/');
+    if (repo && file) loadFile(repo, file);
+  }
+};
+</script>
+</body>
+</html>

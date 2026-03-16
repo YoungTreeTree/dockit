@@ -1,0 +1,27 @@
+repos:
+  # --- Backend ---
+  - path: Backend/user-service
+    url: git@github.com:myorg/user-service.git
+    start_path: docs
+
+  - path: Backend/order-service
+    url: git@github.com:myorg/order-service.git
+    start_path: docs
+
+  - path: Backend/api-gateway
+    url: git@github.com:myorg/api-gateway.git
+
+  # --- Frontend ---
+  - path: Frontend/web-app
+    url: git@github.com:myorg/web-app.git
+
+  - path: Frontend/admin-panel
+    url: git@github.com:myorg/admin-panel.git
+
+  # --- Infra ---
+  - path: Infra/deploy-scripts
+    url: https://github.com/myorg/deploy-scripts.git
+    branch: main
+    auth:
+      type: http
+      token: your-token-here

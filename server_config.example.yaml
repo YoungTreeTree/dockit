@@ -1,0 +1,14 @@
+output_dir: ./docs_output
+cache_dir: .dockit_cache
+
+server:
+  port: 9090
+  host: 0.0.0.0
+
+defaults:
+  branch: main
+  patterns:
+    - '.*\.md$'
+  auth:
+    type: ssh
+    ssh_key_path: ~/.ssh/id_rsa
