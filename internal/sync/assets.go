@@ -38,16 +38,26 @@ func ExtractAssets(repoDir string, mdFiles []string) []string {
 			if isExternalRef(ref) {
 				continue
 			}
+
+			// strip fragment identifier (e.g. "file.go#L16" → "file.go")
+			if idx := strings.Index(ref, "#"); idx > 0 {
+				ref = ref[:idx]
+			}
+
 			// resolve relative to the markdown file's directory
 			resolved := path.Clean(path.Join(mdDir, ref))
 			if seen[resolved] {
 				continue
 			}
 
-			// verify the file exists in the repo
+			// verify the file exists in the repo and is not a directory
 			absResolved := filepath.Join(repoDir, filepath.FromSlash(resolved))
-			if _, err := os.Stat(absResolved); err != nil {
+			info, err := os.Stat(absResolved)
+			if err != nil {
 				slog.Warn("referenced asset not found", "markdown", mdFile, "asset", resolved)
+				continue
+			}
+			if info.IsDir() {
 				continue
 			}
 

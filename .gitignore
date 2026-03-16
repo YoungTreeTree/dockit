@@ -12,4 +12,7 @@ docs_output/
 .idea/
 .vscode/
 *.swp
+
+# Local
 .claude/
+/example/
